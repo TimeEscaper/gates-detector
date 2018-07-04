@@ -33,25 +33,23 @@ cv::Mat hueRescale(cv::Mat image) {
     rgbChannels[2] = cv::Mat::zeros(image.rows, image.cols, CV_8UC1);
     cv::Mat bgChannel;
     cv::merge(rgbChannels, 3, bgChannel);
-    //show("Blue anf green", bgChannel);
 
     cv::Mat hsv;
     cv::cvtColor(bgChannel, hsv, CV_BGR2HSV);
     std::vector<cv::Mat> hsvChannels;
     cv::split(hsv, hsvChannels);
     cv::Mat hChannel = hsvChannels[0];
-    //show("Hue", hChannel);
 
-    //customLinearTransform(hChannel);
-    //cv::blur(hChannel, hChannel, cv::Size(7,7));
-    //show("Transformed Hue", hChannel);
+    customLinearTransform(hChannel);
+
     return hChannel;
-
 }
 
 void closing(cv::Mat &image) {
     cv::Mat structElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(2, 2));
-    cv::morphologyEx(image, image, cv::MORPH_CLOSE, structElement);
+    for (int i = 1; i <= 1; i++) {
+        cv::morphologyEx(image, image, cv::MORPH_CLOSE, structElement, cv::Point(-1,-1), i);
+    }
 }
 
 int main() {
@@ -60,43 +58,31 @@ int main() {
     //cv::medianBlur(src, src, 15);
     show("Source", src);
 
-    cv::Mat hChannel = hueRescale(src);
-    closing(hChannel);
-    show("Hue rescaled", hChannel);
+    cv::Mat hue = hueRescale(src);
+    show("Hue", hue);
 
+    cv::Mat denoised;
+    cv::fastNlMeansDenoising(hue, denoised);
+    show("NL denoise", denoised);
 
-    cv::fastNlMeansDenoising(hChannel, hChannel);
-    show("NL denoising", hChannel);
-
-    cv::Mat binary;
-    cv::adaptiveThreshold(hChannel, binary, MAX_INTENSITY,
-                          CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY_INV, 35, 1);
-    show("Adaptive threshold", binary);
-
-    /**
-    closing(binary);
-    show("Closing", binary);
-     */
+    cv::Mat bw;
+    cv::adaptiveThreshold(denoised, bw, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY_INV, 7, 1);
+    closing(bw);
+    show("Adaptive threshold", bw);
 
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
-    cv::findContours(binary, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE);
-    cv::drawContours(src, contours, -1, cv::Scalar(255, 0, 0), 1, 8, hierarchy);
-    show("Contours", binary);
+    cv::findContours(bw, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE);
+    cv::drawContours(src, contours, -1, cv::Scalar(0, 0, 255), 1, 8, hierarchy);
 
-    cv::Mat edges;
-    cv::Canny(binary, edges, 50, 150);
-    show("Canny", edges);
-
-    /**
-    std::vector<cv::Vec4i> lines;
-    cv::HoughLinesP(edges, lines, 1, CV_PI/360, 80);
-    for (int i = 0; i < lines.size(); i++) {
-        cv::line(src, cv::Point(lines[i][0], lines[i][1]),
-                 cv::Point(lines[i][2], lines[i][3]), cv::Scalar(0,0,255), 1, 8);
+    std::vector<std::vector<cv::Point>> hulls(contours.size());
+    for (int i = 0; i < contours.size(); i++) {
+        cv::convexHull(contours[i], hulls[i]);
     }
-    show("Lines", src);
-     */
+    cv::drawContours(src, hulls, -1, cv::Scalar(255, 0, 0), 1, 8, hierarchy);
+    show("Hulls", src);
+
+    /**TODO: find max area hull and get its center */
 
     return 0;
 }
