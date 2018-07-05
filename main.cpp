@@ -1,7 +1,7 @@
 #include <iostream>
 
 #define IMAGES_DIR "/home/sibirsky/gates_locator_images/"
-#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/gates.jpg"
+#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/frame2-1059.jpg"
 #define MAX_INTENSITY 360
 
 #include <opencv2/opencv.hpp>
@@ -53,9 +53,8 @@ void closing(cv::Mat &image) {
 }
 
 int main() {
-
     cv::Mat src = cv::imread(EXAMPLE_IMAGE);
-    //cv::medianBlur(src, src, 15);
+    //cv::resize(src, src, cv::Size(), 0.2, 0.2, CV_INTER_LINEAR);
     show("Source", src);
 
     cv::Mat hue = hueRescale(src);
@@ -76,13 +75,24 @@ int main() {
     cv::drawContours(src, contours, -1, cv::Scalar(0, 0, 255), 1, 8, hierarchy);
 
     std::vector<std::vector<cv::Point>> hulls(contours.size());
+    double maxArea = 0.0;
+    int maxAreaIndex = 0;
     for (int i = 0; i < contours.size(); i++) {
         cv::convexHull(contours[i], hulls[i]);
+        double area = cv::contourArea(hulls[i]);
+        if (area > maxArea) {
+            maxArea = area;
+            maxAreaIndex = i;
+        }
     }
-    cv::drawContours(src, hulls, -1, cv::Scalar(255, 0, 0), 1, 8, hierarchy);
+    cv::drawContours(src, hulls, maxAreaIndex, cv::Scalar(255, 0, 0), 1, 8, hierarchy);
     show("Hulls", src);
 
-    /**TODO: find max area hull and get its center */
+    cv::Moments moments = cv::moments(hulls[maxAreaIndex], false);
+    cv::Point2f massCenter = cv::Point2f(moments.m10/moments.m00, moments.m01/moments.m00);
+
+    cv::circle(src, massCenter, 10, cv::Scalar(0, 255, 0), 3);
+    show("Center", src);
 
     return 0;
 }
