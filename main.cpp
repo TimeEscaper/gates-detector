@@ -8,7 +8,7 @@
 #include "include/Utils.h"
 
 
-#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/gates.jpg"
+#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/sauvc-2.png"
 
 
 int main() {
@@ -19,10 +19,10 @@ int main() {
 #ifndef OLD
 
     cv::Mat image = createPipeline(src)
-            .apply(gpuMeanShift)
-            .apply(extractValueChannel)
-            .apply(extractLinesSolid)
-            .apply(extractVerticalLines)
+            .apply(gpuMeanShift, "MeanShift")
+            .apply(extractValueChannel, "Value channel")
+            //.apply(extractLinesSolid, "Draw solid lines")
+            .apply(extractVerticalLines, "Draw vertical lines")
             .getImage();
 
     show("Lines", image);

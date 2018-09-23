@@ -20,8 +20,8 @@ public:
 
     ImgprocPipe& operator=(const ImgprocPipe& other);
 
-    ImgprocPipe apply(std::function<cv::Mat(const cv::Mat&)> imgprocFuntion);
-    ImgprocPipe apply(std::function<void(const cv::Mat&, cv::Mat&)> imgprocFuntion);
+    ImgprocPipe apply(std::function<cv::Mat(const cv::Mat&)> imgprocFuntion, const char* name = "Operation");
+    ImgprocPipe apply(std::function<void(const cv::Mat&, cv::Mat&)> imgprocFuntion, const char* name = "Operation");
     cv::Mat getImage();
 
 };

@@ -19,20 +19,20 @@ ImgprocPipe& ImgprocPipe::operator=(const ImgprocPipe &other) {
     return *this;
 }
 
-ImgprocPipe ImgprocPipe::apply(std::function<cv::Mat(const cv::Mat &)> imgprocFuntion) {
+ImgprocPipe ImgprocPipe::apply(std::function<cv::Mat(const cv::Mat &)> imgprocFuntion, const char* name) {
     cv::Mat newImage = imgprocFuntion(currentImage);
 #ifdef PIPELINE_DEBUG
-    show("Applied", newImage);
+    show(name, newImage);
 #endif
     ImgprocPipe pipe(newImage);
     return pipe;
 }
 
-ImgprocPipe ImgprocPipe::apply(std::function<void(const cv::Mat &, cv::Mat &)> imgprocFuntion) {
+ImgprocPipe ImgprocPipe::apply(std::function<void(const cv::Mat &, cv::Mat &)> imgprocFuntion, const char* name) {
     cv::Mat newImage;
     imgprocFuntion(currentImage, newImage);
 #ifdef PIPELINE_DEBUG
-    show("Applied", newImage);
+    show(name, newImage);
 #endif
     ImgprocPipe pipe(newImage);
     return pipe;
