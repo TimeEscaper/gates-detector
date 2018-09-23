@@ -1,77 +1,51 @@
 #include <iostream>
-
-#define IMAGES_DIR "/home/sibirsky/gates_locator_images/"
-#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/frame2-1059.jpg"
-#define MAX_INTENSITY 360
-
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/core.hpp>
+#include "include/ImgprocLogic.h"
+#include "include/ImgprocPipeline.h"
+#include "include/Utils.h"
 
-typedef uchar Pixel;
 
-void show(const char* name, const cv::Mat &image) {
-    cv::namedWindow(name);
-    cv::imshow(name, image);
-    cv::waitKey();
-    cv::destroyWindow(name);
-}
+#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/gates.jpg"
 
-void customLinearTransform(cv::Mat &image) {
-    double max, min;
-    cv::minMaxLoc(image, &min, &max);
-    double diff = max - min;
-    image.forEach<Pixel>(
-            [min, diff](Pixel &pixel, const int *position) -> void {
-                pixel = ((pixel - min) / diff) * MAX_INTENSITY;
-            });
-}
-
-cv::Mat hueRescale(cv::Mat image) {
-    cv::Mat rgbChannels[3];
-    cv::split(image, rgbChannels);
-    rgbChannels[2] = cv::Mat::zeros(image.rows, image.cols, CV_8UC1);
-    cv::Mat bgChannel;
-    cv::merge(rgbChannels, 3, bgChannel);
-
-    cv::Mat hsv;
-    cv::cvtColor(bgChannel, hsv, CV_BGR2HSV);
-    std::vector<cv::Mat> hsvChannels;
-    cv::split(hsv, hsvChannels);
-    cv::Mat hChannel = hsvChannels[0];
-
-    customLinearTransform(hChannel);
-
-    return hChannel;
-}
-
-void closing(cv::Mat &image) {
-    cv::Mat structElement = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(2, 2));
-    for (int i = 1; i <= 1; i++) {
-        cv::morphologyEx(image, image, cv::MORPH_CLOSE, structElement, cv::Point(-1,-1), i);
-    }
-}
 
 int main() {
+
     cv::Mat src = cv::imread(EXAMPLE_IMAGE);
-    //cv::resize(src, src, cv::Size(), 0.2, 0.2, CV_INTER_LINEAR);
     show("Source", src);
 
-    cv::Mat hue = hueRescale(src);
-    show("Hue", hue);
+#ifndef OLD
 
-    cv::Mat denoised;
-    cv::fastNlMeansDenoising(hue, denoised);
-    show("NL denoise", denoised);
+    cv::Mat image = createPipeline(src)
+            .apply(gpuMeanShift)
+            .apply(extractValueChannel)
+            .apply(extractLinesSolid)
+            .apply(extractVerticalLines)
+            .getImage();
 
-    cv::Mat bw;
-    cv::adaptiveThreshold(denoised, bw, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY_INV, 7, 1);
-    closing(bw);
-    show("Adaptive threshold", bw);
+    show("Lines", image);
+
+#else
+
+    cv::Mat image = createPipeline(src)
+            .apply(extractHueChannel)
+            .apply([](const cv::Mat& src, cv::Mat& dst) -> void {
+                linearChannelRescale(src, dst, 360);
+            })
+            .apply([](const cv::Mat& src, cv::Mat& dst) -> void {
+                cv::fastNlMeansDenoising(src, dst);
+            })
+            .apply([](const cv::Mat& src, cv::Mat& dst) -> void {
+                cv::adaptiveThreshold(src, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY_INV, 51, 1);
+            })
+            .getImage();
+
 
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
-    cv::findContours(bw, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE);
+    cv::findContours(image, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE);
     cv::drawContours(src, contours, -1, cv::Scalar(0, 0, 255), 1, 8, hierarchy);
 
     std::vector<std::vector<cv::Point>> hulls(contours.size());
@@ -93,6 +67,8 @@ int main() {
 
     cv::circle(src, massCenter, 10, cv::Scalar(0, 255, 0), 3);
     show("Center", src);
+
+#endif
 
     return 0;
 }
