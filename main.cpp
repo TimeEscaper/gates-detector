@@ -8,8 +8,7 @@
 #include "include/Utils.h"
 
 
-#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/sauvc-2.png"
-
+#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/gates.jpg"
 
 int main() {
 
@@ -21,9 +20,45 @@ int main() {
     cv::Mat image = createPipeline(src)
             .apply(gpuMeanShift, "MeanShift")
             .apply(extractValueChannel, "Value channel")
+                    //.apply(extractLinesSolid, "Draw solid lines")
+            .apply(extractVerticalLines, "Draw vertical lines")
+            //.apply(morphology, "Closing")
+            .getImage();
+
+    /**
+    cv::Mat image = createPipeline
+     (src)
+            .apply(blur)
+            //.apply(bilateral, "Filter")
+            //.apply(gpuMeanShift, "MeanShift")
+            .apply(extractHueChannel, "Hue channel")
+            //.apply(bilateral, "Bilateral")
+            .apply(drawContours, "Contours")
+            //.apply(blur, "Blur")
+            //.apply(blur, "Blur 2")
+            //.apply([](const cv::Mat& src, cv::Mat& dst) -> void {
+                //linearChannelRescale(src, dst, 360);
+            //})
+                    //.apply(canny)
+                    //.apply(extractLinesSolid, "Draw solid lines")
+            //.apply(extractVerticalLines, "Draw vertical lines")
+            .getImage();
+            */
+
+    /**
+    cv::Mat image = createPipeline(src)
+            //.apply(blur)
+            //.apply(bilateral, "Filter")
+            //.apply(gpuMeanShift, "MeanShift")
+            .apply(extractHueChannel, "Value channel")
+            .apply([](const cv::Mat& src, cv::Mat& dst) -> void {
+                linearChannelRescale(src, dst, 360);
+            })
+            //.apply(canny)
             //.apply(extractLinesSolid, "Draw solid lines")
             .apply(extractVerticalLines, "Draw vertical lines")
             .getImage();
+            */
 
     show("Lines", image);
 
