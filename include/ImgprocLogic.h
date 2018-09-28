@@ -29,12 +29,20 @@ void extractVerticalLines(const cv::Mat& src, cv::Mat& dst);
 
 void detectLines(const cv::Mat& src, std::vector<cv::Vec4f>& lines);
 
+void detectVerticalLines(const cv::Mat& src, std::vector<cv::Vec4f>& lines);
+
 void drawContours(const cv::Mat& src, cv::Mat& dst);
+
+void filterLinesByDistance(const std::vector<cv::Vec4f>& src, std::vector<cv::Vec4f>& dst);
 
 void morphology(const cv::Mat& src, cv::Mat& dst);
 
 float getLineSlope(const cv::Vec4f& line);
 
 float getLength(const cv::Vec4f& line);
+
+float computeDistanceMetric(const cv::Vec4f& line1, const cv::Vec4f& line2);
+
+void drawLines(cv::Mat& canvas, const std::vector<cv::Vec4f>& lines);
 
 #endif //GATES_LOCATOR_IMGPROC_LOGIC_H

@@ -142,33 +142,12 @@ void extractLinesSolid(const cv::Mat& src, cv::Mat& dst) {
 
 void extractVerticalLines(const cv::Mat& src, cv::Mat& dst) {
 
-    cv::Ptr<cv::LineSegmentDetector> detector = cv::createLineSegmentDetector(cv::LSD_REFINE_STD);
     std::vector<cv::Vec4f> lines;
-    detector->detect(src, lines);
+    detectVerticalLines(src, lines);
 
-    cv::Mat buff = cv::Mat(src.rows, src.cols, CV_8UC1);
-    buff.setTo(cv::Scalar(255));
-
-    double maxLength = 0;
-    std::vector<cv::Vec4f> filteredLines;
-    for (int i = 0; i < lines.size(); i++) {
-        if (getLineSlope(lines[i]) < 10.0f) {
-            filteredLines.push_back(lines[i]);
-            double length = getLength(lines[i]);
-            if (length > maxLength)
-                maxLength = length;
-        }
-    }
-
-    std::vector<cv::Vec4f> lengthFilteredLines;
-    for (int i = 0; i < filteredLines.size(); i++) {
-        double length = getLength(filteredLines[i]);
-        if (length >= 0.1*maxLength)
-            lengthFilteredLines.push_back(filteredLines[i]);
-    }
-
-
-    detector->drawSegments(buff, lengthFilteredLines);
+    cv::Ptr<cv::LineSegmentDetector> detector = cv::createLineSegmentDetector(cv::LSD_REFINE_STD);
+    cv::Mat buff = src;
+    detector->drawSegments(buff, lines);
 
     std::vector<cv::Mat> channels;
     cv::split(buff, channels);
@@ -181,6 +160,32 @@ void detectLines(const cv::Mat& src, std::vector<cv::Vec4f>& lines) {
     detector->detect(src, lines);
 }
 
+void detectVerticalLines(const cv::Mat& src, std::vector<cv::Vec4f>& lines) {
+    cv::Ptr<cv::LineSegmentDetector> detector = cv::createLineSegmentDetector(cv::LSD_REFINE_STD);
+    std::vector<cv::Vec4f> allLines;
+    detector->detect(src, allLines);
+
+    cv::Mat buff = cv::Mat(src.rows, src.cols, CV_8UC1);
+    buff.setTo(cv::Scalar(255));
+
+    double maxLength = 0;
+    std::vector<cv::Vec4f> filteredLines;
+    for (int i = 0; i < allLines.size(); i++) {
+        if (getLineSlope(allLines[i]) < 10.0f) {
+            filteredLines.push_back(allLines[i]);
+            double length = getLength(allLines[i]);
+            if (length > maxLength)
+                maxLength = length;
+        }
+    }
+
+    for (int i = 0; i < filteredLines.size(); i++) {
+        double length = getLength(filteredLines[i]);
+        if (length >= 0.1*maxLength)
+            lines.push_back(filteredLines[i]);
+    }
+}
+
 void drawContours(const cv::Mat& src, cv::Mat& dst) {
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
@@ -190,6 +195,37 @@ void drawContours(const cv::Mat& src, cv::Mat& dst) {
     {
         cv::drawContours( dst, contours, (int)i, cv::Scalar(255,0,0), 2, cv::LINE_8, hierarchy, 0 );
     }
+}
+
+void filterLinesByDistance(const std::vector<cv::Vec4f>& src, std::vector<cv::Vec4f>& dst) {
+
+    cv::Mat distances(src.size(), src.size(), CV_32FC1);
+    std::vector<float> minDistances;
+    for (int i = 0; i < src.size(); i++) {
+        float minCurrentDistance = INFINITY;
+        for (int j = 0; j < src.size(); j++) {
+
+            if (i == j) {
+                distances.at<float>(i, j) = INFINITY;
+                continue;
+            }
+
+            float distance = computeDistanceMetric(src[i], src[j]);
+            distances.at<float>(i, j) = distance;
+            if (distance < minCurrentDistance)
+                minCurrentDistance = distance;
+        }
+        minDistances.push_back(minCurrentDistance);
+    }
+
+    float averageDistance = std::accumulate(minDistances.begin(), minDistances.end(), 0.0) / minDistances.size();
+
+    for (int i = 0; i < src.size(); i++) {
+        if (minDistances[i] <= 17.0f)
+            dst.push_back(src[i]);
+    }
+
+    //dst = src;
 }
 
 void morphology(const cv::Mat& src, cv::Mat& dst) {
@@ -209,4 +245,40 @@ float getLineSlope(const cv::Vec4f& line) {
 
 float getLength(const cv::Vec4f& line) {
     return std::sqrt((line[2]-line[0])*(line[2]-line[0]) + (line[3]-line[1])*(line[3]-line[1]));
+}
+
+float computeDistanceMetric(const cv::Vec4f& line1, const cv::Vec4f& line2) {
+    float distX1 = std::abs(line1[0] - line2[0]);
+    float distX2 = std::abs(line1[0] - line2[2]);
+    float distX3 = std::abs(line1[2] - line2[0]);
+    float distX4 = std::abs(line1[2] - line2[2]);
+    float distX = std::max({distX1, distX2, distX3, distX4});
+
+    float y11 = line1[1];
+    float y12 = line1[3];
+    float y21 = line2[1];
+    float y22 = line2[3];
+
+    float distY;
+
+    if (y11 > y12)
+        std::swap(y11, y12);
+    if (y21 > y22)
+        std::swap(y21, y22);
+
+    if (((y11 <= y21) && (y12 >= y21)) || ((y21 <= y11) && (y22 >= y11)))
+        distY = 0;
+    else {
+        distY = y12 <= y21 ? y21 - y12 : y11 - y22;
+    }
+
+    //return std::sqrt(distX*distX + distY*distY);
+    return distX;
+}
+
+void drawLines(cv::Mat& canvas, const std::vector<cv::Vec4f>& lines) {
+    for (int i = 0; i < lines.size(); i++) {
+        cv::line(canvas, cv::Point2f(lines[i][0], lines[i][1]), cv::Point2f(lines[i][2], lines[i][3]),
+                cv::Scalar(0, 0, 255), 1);
+    }
 }

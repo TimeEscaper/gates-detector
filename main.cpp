@@ -8,7 +8,9 @@
 #include "include/Utils.h"
 
 
-#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/gates.jpg"
+#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/frame1-1002.jpg"
+
+#define TEMPLATE "/home/sibirsky/gates_locator_images/template6_left.png"
 
 int main() {
 
@@ -17,13 +19,75 @@ int main() {
 
 #ifndef OLD
 
+
+    /**
+    cv::Mat templ = cv::imread(TEMPLATE);
+    cv::resize(templ, templ, cv::Size(0,0), 1.5, 1.5);
+    cv::Mat canvas = src;
+
+    //int resultCols = src.cols - templ.cols + 1;
+    //int resultRows = src.rows - templ.rows + 1;
+
+    //cv::Mat result(resultRows, resultCols, CV_32FC1);
+    cv::Mat result;
+
+    cv::matchTemplate(src, templ, result, CV_TM_CCORR_NORMED, cv::noArray());
+    cv::normalize(result, result, 0, 1, cv::NORM_MINMAX, -1, cv::Mat());
+
+    double minValue, maxValue;
+    cv::Point minLoc, maxLoc, matchLoc;
+
+    cv::minMaxLoc(result, &minValue, &maxValue, &minLoc, &maxLoc, cv::Mat());
+    matchLoc = maxLoc;
+
+    cv::rectangle(canvas, matchLoc, cv::Point(matchLoc.x + templ.cols , matchLoc.y + templ.rows),
+            cv::Scalar::all(0), 2, 8, 0);
+    cv::rectangle(result, matchLoc, cv::Point(matchLoc.x + templ.cols , matchLoc.y + templ.rows),
+            cv::Scalar::all(0), 2, 8, 0);
+
+    show("Result", canvas);
+    show("Result", result);
+     */
+
+
+
     cv::Mat image = createPipeline(src)
             .apply(gpuMeanShift, "MeanShift")
             .apply(extractValueChannel, "Value channel")
                     //.apply(extractLinesSolid, "Draw solid lines")
-            .apply(extractVerticalLines, "Draw vertical lines")
+            //.apply(extractVerticalLines, "Draw vertical lines")
             //.apply(morphology, "Closing")
             .getImage();
+
+    std::vector<cv::Vec4f> verticalLines;
+    detectVerticalLines(image, verticalLines);
+
+    std::vector<cv::Vec4f> filteredLinses;
+    filterLinesByDistance(verticalLines, filteredLinses);
+
+    float minX = INFINITY;
+    float maxX = 0;
+    float minY = INFINITY;
+    float maxY = 0;
+    for (int i = 0; i < filteredLinses.size(); i++) {
+        float lineMinX = std::min(filteredLinses[i][0], filteredLinses[i][2]);
+        float lineMaxX = std::max(filteredLinses[i][0], filteredLinses[i][2]);
+        float lineMinY = std::min(filteredLinses[i][1], filteredLinses[i][3]);
+        float lineMaxY = std::max(filteredLinses[i][1], filteredLinses[i][3]);
+
+        minX = std::min(minX, lineMinX);
+        maxX = std::max(maxX, lineMaxX);
+        minY = std::min(minY, lineMinY);
+        maxY = std::max(maxY, lineMaxY);
+    }
+
+    cv::Mat canvas = src;
+    drawLines(canvas, filteredLinses);
+    show("Filtered lines", canvas);
+
+    cv::Rect roiRect(minX, minY, maxX - minX, maxY - minY);
+    cv::Mat roi = src(roiRect);
+    show("ROI", roi);
 
     /**
     cv::Mat image = createPipeline
@@ -60,7 +124,7 @@ int main() {
             .getImage();
             */
 
-    show("Lines", image);
+    //show("Lines", image);
 
 #else
 
