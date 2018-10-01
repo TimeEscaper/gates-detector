@@ -8,7 +8,7 @@
 #include "include/Utils.h"
 
 
-#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/frame1-1002.jpg"
+#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/sauvc-4.png"
 
 #define TEMPLATE "/home/sibirsky/gates_locator_images/template6_left.png"
 
@@ -56,12 +56,44 @@ int main() {
             .apply(extractValueChannel, "Value channel")
                     //.apply(extractLinesSolid, "Draw solid lines")
             //.apply(extractVerticalLines, "Draw vertical lines")
-            //.apply(morphology, "Closing")
+            .apply(morphology, "Closing")
             .getImage();
 
     std::vector<cv::Vec4f> verticalLines;
     detectVerticalLines(image, verticalLines);
+    //detectHorizontalLines(image, verticalLines);
 
+    std::vector<cv::Point2f> allPoints;
+    for (int i = 0; i < verticalLines.size(); i++) {
+        allPoints.push_back(cv::Point2f(verticalLines[i][0], verticalLines[i][1]));
+        allPoints.push_back(cv::Point2f(verticalLines[i][2], verticalLines[i][3]));
+        cv::circle(src, cv::Point2f(verticalLines[i][0], verticalLines[i][1]), 5, cv::Scalar(255,0,0), 2);
+        cv::circle(src, cv::Point2f(verticalLines[i][2], verticalLines[i][3]), 5, cv::Scalar(255,0,0), 2);
+    }
+    show("Points", src);
+
+    std::sort(allPoints.begin(), allPoints.end(),
+            [](const cv::Point2f& a, const cv::Point2f& b) -> bool { return a.x > b.x; });
+
+    cv::Point2f currentPoint = allPoints[0];
+    std::vector<cv::Vec4f> mergedLines;
+    cv::Point2f topPoint = currentPoint;
+    for (int i = 0; i < allPoints.size(); i++) {
+        if (std::abs(allPoints[i].x - currentPoint.x) >= 7) {
+            mergedLines.push_back({topPoint.x, topPoint.y, currentPoint.x, currentPoint.y});
+            topPoint = allPoints[i];
+        }
+        currentPoint = allPoints[i];
+    }
+
+    for (int i = 0; i < mergedLines.size(); i++) {
+        cv::line(src, cv::Point2f(mergedLines[i][0], mergedLines[i][1]), cv::Point2f(mergedLines[i][2], mergedLines[i][3]),
+                 cv::Scalar(0, 0, 255), 11);
+    }
+    show("Merged lines", src);
+
+
+    /**
     std::vector<cv::Vec4f> filteredLinses;
     filterLinesByDistance(verticalLines, filteredLinses);
 

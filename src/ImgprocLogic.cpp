@@ -186,6 +186,32 @@ void detectVerticalLines(const cv::Mat& src, std::vector<cv::Vec4f>& lines) {
     }
 }
 
+void detectHorizontalLines(const cv::Mat& src, std::vector<cv::Vec4f>& lines) {
+    cv::Ptr<cv::LineSegmentDetector> detector = cv::createLineSegmentDetector(cv::LSD_REFINE_STD);
+    std::vector<cv::Vec4f> allLines;
+    detector->detect(src, allLines);
+
+    cv::Mat buff = cv::Mat(src.rows, src.cols, CV_8UC1);
+    buff.setTo(cv::Scalar(255));
+
+    double maxLength = 0;
+    std::vector<cv::Vec4f> filteredLines;
+    for (int i = 0; i < allLines.size(); i++) {
+        if (getLineSlope(allLines[i]) < 110.0f && getLineSlope(allLines[i]) > 85.0f) {
+            filteredLines.push_back(allLines[i]);
+            double length = getLength(allLines[i]);
+            if (length > maxLength)
+                maxLength = length;
+        }
+    }
+
+    for (int i = 0; i < filteredLines.size(); i++) {
+        double length = getLength(filteredLines[i]);
+        if (length >= 0.1*maxLength)
+            lines.push_back(filteredLines[i]);
+    }
+}
+
 void drawContours(const cv::Mat& src, cv::Mat& dst) {
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;

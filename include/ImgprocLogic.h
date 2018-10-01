@@ -31,6 +31,8 @@ void detectLines(const cv::Mat& src, std::vector<cv::Vec4f>& lines);
 
 void detectVerticalLines(const cv::Mat& src, std::vector<cv::Vec4f>& lines);
 
+void detectHorizontalLines(const cv::Mat& src, std::vector<cv::Vec4f>& lines);
+
 void drawContours(const cv::Mat& src, cv::Mat& dst);
 
 void filterLinesByDistance(const std::vector<cv::Vec4f>& src, std::vector<cv::Vec4f>& dst);
