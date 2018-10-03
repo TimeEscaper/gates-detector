@@ -8,7 +8,7 @@
 #include "include/Utils.h"
 
 
-#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/sauvc-4.png"
+#define EXAMPLE_IMAGE "/home/sibirsky/gates_locator_images/frame1-1002.jpg"
 
 #define TEMPLATE "/home/sibirsky/gates_locator_images/template6_left.png"
 
@@ -52,6 +52,7 @@ int main() {
 
 
     cv::Mat image = createPipeline(src)
+            //.apply(blur, "Blur")
             .apply(gpuMeanShift, "MeanShift")
             .apply(extractValueChannel, "Value channel")
                     //.apply(extractLinesSolid, "Draw solid lines")
@@ -76,14 +77,31 @@ int main() {
             [](const cv::Point2f& a, const cv::Point2f& b) -> bool { return a.x > b.x; });
 
     cv::Point2f currentPoint = allPoints[0];
-    std::vector<cv::Vec4f> mergedLines;
-    cv::Point2f topPoint = currentPoint;
-    for (int i = 0; i < allPoints.size(); i++) {
-        if (std::abs(allPoints[i].x - currentPoint.x) >= 7) {
-            mergedLines.push_back({topPoint.x, topPoint.y, currentPoint.x, currentPoint.y});
-            topPoint = allPoints[i];
+    std::vector<std::vector<cv::Point2f>> pointLines;
+    std::vector<cv::Point2f> currentPointLine;
+    currentPointLine.push_back(currentPoint);
+
+    for (int i = 1; i < allPoints.size(); i++) {
+
+        if (std::abs(allPoints[i].x - currentPoint.x) > 14.0f) {
+            pointLines.push_back(currentPointLine);
+            currentPointLine.clear();
         }
+        currentPointLine.push_back(allPoints[i]);
+
         currentPoint = allPoints[i];
+    }
+    pointLines.push_back(currentPointLine);
+
+    std::vector<cv::Vec4f> mergedLines;
+    for (int i = 0; i < pointLines.size(); i++) {
+        /* TODO: Use line fitting */
+        auto edges  = std::minmax_element(pointLines[i].begin(), pointLines[i].end(),
+                [](const cv::Point2f& a, const cv::Point2f& b) {
+                    return a.y > b.y;
+        });
+
+        mergedLines.push_back({(*(edges.first)).x, (*(edges.first)).y, (*(edges.second)).x, (*(edges.second)).y});
     }
 
     for (int i = 0; i < mergedLines.size(); i++) {

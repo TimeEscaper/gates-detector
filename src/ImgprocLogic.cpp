@@ -44,8 +44,10 @@ void cpuMeanShift(const cv::Mat& src, cv::Mat& dst) {
 }
 
 void blur(const cv::Mat& src, cv::Mat& dst) {
-    cv::Mat mat = src;
-    //cv::blur(src, dst, cv::Size(7, 7));
+    //cv::Mat mat = src;
+    cv::blur(src, dst, cv::Size(7, 7));
+
+    /**
     double discard_ratio = 0.05;
     int hists[3][256];
     memset(hists, 0, 3*256*sizeof(int));
@@ -92,6 +94,7 @@ void blur(const cv::Mat& src, cv::Mat& dst) {
     }
 
     dst = mat;
+     */
 }
 
 void bilateral(const cv::Mat& src, cv::Mat& dst) {
