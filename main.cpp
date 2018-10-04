@@ -95,7 +95,7 @@ int main() {
 
     std::vector<cv::Vec4f> mergedLines;
     for (int i = 0; i < pointLines.size(); i++) {
-        /* TODO: Use line fitting */
+        // TODO: Use line fitting
         auto edges  = std::minmax_element(pointLines[i].begin(), pointLines[i].end(),
                 [](const cv::Point2f& a, const cv::Point2f& b) {
                     return a.y > b.y;
@@ -104,11 +104,34 @@ int main() {
         mergedLines.push_back({(*(edges.first)).x, (*(edges.first)).y, (*(edges.second)).x, (*(edges.second)).y});
     }
 
+    /**
     for (int i = 0; i < mergedLines.size(); i++) {
         cv::line(src, cv::Point2f(mergedLines[i][0], mergedLines[i][1]), cv::Point2f(mergedLines[i][2], mergedLines[i][3]),
                  cv::Scalar(0, 0, 255), 11);
     }
     show("Merged lines", src);
+     */
+
+    std::sort(mergedLines.begin(), mergedLines.end(), [](const cv::Vec4f& a, const cv::Vec4f& b) {
+        return getLength(a) > getLength(b);
+    });
+
+    cv::Vec4f line1 = mergedLines[0]; // Longest line
+    cv::Vec4f line2 = mergedLines[1]; // Second longest line
+
+    float verticalRelation = getLength(line2) / getLength(line1);
+    float sidesRelation = getDistance(line1[0], line1[1], line2[0], line2[1]) / getLength(line2);
+    if (verticalRelation < 0.4f || sidesRelation < 0.4f || sidesRelation > 1.4f)
+        return 0;
+
+    // TODO: find point projections
+    cv::Point2f topLeft(std::min(line1[2], line2[2]), std::min(line1[3], line2[3]));
+    cv::Point2f bottomRight(std::max(line1[0], line2[0]), std::min(line1[1], line2[1]));
+
+    cv::Rect gatesRect(topLeft, bottomRight);
+
+    cv::rectangle(src, topLeft, bottomRight, cv::Scalar(0, 0, 255));
+    show("Gates", src);
 
 
     /**

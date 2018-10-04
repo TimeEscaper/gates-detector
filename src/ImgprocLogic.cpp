@@ -276,6 +276,14 @@ float getLength(const cv::Vec4f& line) {
     return std::sqrt((line[2]-line[0])*(line[2]-line[0]) + (line[3]-line[1])*(line[3]-line[1]));
 }
 
+float getDistance(const cv::Point2f& point1, const cv::Point2f& point2) {
+    return std::sqrt((point1.x - point2.x)*(point1.x - point2.x) - (point1.y - point2.y)*(point1.y - point2.y));
+}
+
+float getDistance(float x1, float y1, float x2, float y2) {
+    return std::sqrt((x1 - x2)*(x1 - x2) - (y1 - y2)*(y1 - y2));
+}
+
 float computeDistanceMetric(const cv::Vec4f& line1, const cv::Vec4f& line2) {
     float distX1 = std::abs(line1[0] - line2[0]);
     float distX2 = std::abs(line1[0] - line2[2]);

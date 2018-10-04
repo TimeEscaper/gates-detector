@@ -43,6 +43,10 @@ float getLineSlope(const cv::Vec4f& line);
 
 float getLength(const cv::Vec4f& line);
 
+float getDistance(const cv::Point2f& point1, const cv::Point2f& point2);
+
+float getDistance(float x1, float y1, float x2, float y2);
+
 float computeDistanceMetric(const cv::Vec4f& line1, const cv::Vec4f& line2);
 
 void drawLines(cv::Mat& canvas, const std::vector<cv::Vec4f>& lines);
