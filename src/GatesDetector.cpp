@@ -98,7 +98,7 @@ GatesDescriptor GatesDetector::detect(const cv::Mat &src, bool withPreprocess) {
     currentPointLine.push_back(currentPoint);
     for (int i = 1; i < allPoints.size(); i++) {
 
-        if (std::abs(allPoints[i].x - currentPoint.x) > 14.0f) {
+        if (std::abs(allPoints[i].x - currentPoint.x) > 22.0f) {
             pointLines.push_back(currentPointLine);
             currentPointLine.clear();
         }
@@ -131,7 +131,7 @@ GatesDescriptor GatesDetector::detect(const cv::Mat &src, bool withPreprocess) {
     // Step 6: check length relation between lines and relation between possible gates' sides
     float verticalRelation = getLength(line2) / getLength(line1);
     float sidesRelation = getDistance(line1[0], line1[1], line2[0], line2[1]) / getLength(line2);
-    if (verticalRelation < 0.4f || sidesRelation < 0.4f || sidesRelation > 1.4f)
+    if (verticalRelation < 0.4f || sidesRelation < 0.4f || sidesRelation > 1.51f)
         return GatesDescriptor::noGates();
 
     // Step 7: find corners of the gates
