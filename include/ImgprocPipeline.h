@@ -1,7 +1,6 @@
 #ifndef GATES_LOCATOR_IMGPROCPIPELINE_H
 #define GATES_LOCATOR_IMGPROCPIPELINE_H
 
-#define PIPELINE_DEBUG
 
 #include <functional>
 #include <opencv2/opencv.hpp>
@@ -11,12 +10,13 @@ class ImgprocPipe {
 private:
 
     cv::Mat currentImage;
+    bool debug;
 
 public:
 
-    ImgprocPipe(const cv::Mat& currentImage);
+    ImgprocPipe(const cv::Mat& currentImage, bool debug);
     ImgprocPipe(ImgprocPipe& other);
-    ~ImgprocPipe();
+    ~ImgprocPipe() = default;
 
     ImgprocPipe& operator=(const ImgprocPipe& other);
 
@@ -26,8 +26,8 @@ public:
 
 };
 
-static ImgprocPipe createPipeline(const cv::Mat src) {
-    ImgprocPipe pipe(src);
+static ImgprocPipe createPipeline(const cv::Mat src, bool debug) {
+    ImgprocPipe pipe(src, debug);
     return pipe;
 }
 

@@ -1,40 +1,38 @@
 #include "../include/ImgprocPipeline.h"
-#include "../include/ImgprocLogic.h"
-#include "../include/Utils.h"
+#include "../include/ImgprocLogicUtil.h"
 
-ImgprocPipe::ImgprocPipe(const cv::Mat& currentImage) {
+ImgprocPipe::ImgprocPipe(const cv::Mat& currentImage, bool debug) {
     this->currentImage = currentImage;
+    this->debug = debug;
 }
 
 ImgprocPipe::ImgprocPipe(ImgprocPipe &other) {
     this->currentImage = other.currentImage;
+    this->debug = other.debug;
 }
-
-ImgprocPipe::~ImgprocPipe() { }
 
 ImgprocPipe& ImgprocPipe::operator=(const ImgprocPipe &other) {
     if (this != &other) {
         this->currentImage = other.currentImage;
+        this->debug = other.debug;
     }
     return *this;
 }
 
 ImgprocPipe ImgprocPipe::apply(std::function<cv::Mat(const cv::Mat &)> imgprocFuntion, const char* name) {
     cv::Mat newImage = imgprocFuntion(currentImage);
-#ifdef PIPELINE_DEBUG
-    show(name, newImage);
-#endif
-    ImgprocPipe pipe(newImage);
+    if (debug)
+        show(name, newImage);
+    ImgprocPipe pipe(newImage, debug);
     return pipe;
 }
 
 ImgprocPipe ImgprocPipe::apply(std::function<void(const cv::Mat &, cv::Mat &)> imgprocFuntion, const char* name) {
     cv::Mat newImage;
     imgprocFuntion(currentImage, newImage);
-#ifdef PIPELINE_DEBUG
-    show(name, newImage);
-#endif
-    ImgprocPipe pipe(newImage);
+    if (debug)
+        show(name, newImage);
+    ImgprocPipe pipe(newImage, debug);
     return pipe;
 }
 
